@@ -18,7 +18,8 @@ std::unordered_map<std::string, size_t> &MetricHandler::getAllFullMetric() {
 
 void MetricHandler::resetMetrics() {
     if (std::time(nullptr) - lastResetTime > RESET_INTERVAL) {
-        lastFullMetrics = metrics;
+        for (auto metric : metrics)
+            lastFullMetrics[metric.first] = metric.second;
         metrics.clear();
         lastResetTime = std::time(nullptr);
     }
