@@ -25,9 +25,6 @@
 #include <netinet/in.h>
 
 
-
-
-
 ClientConnection::ClientConnection(const int clientFd,
                                    const sockaddr_in clientAddr,
                                    const Server *connectedServer): fd(clientFd),
@@ -169,33 +166,26 @@ void ClientConnection::handleFileOutput() {
         chunkHeader << std::hex << readBuffer.length() << "\r\n";
         const std::string chunkHeaderStr = chunkHeader.str();
 
-        // Write the chunk header
-        if (send(fd, chunkHeaderStr.c_str(), chunkHeaderStr.length(), MSG_NOSIGNAL) <= 0) {
+        std::string chunk;
+        chunk.append(chunkHeaderStr);
+        chunk.append(readBuffer);
+        chunk.append("\r\n");
+        if (chunkHeaderStr.empty()) {
+            Logger::log(LogLevel::ERROR, "Chunk header is empty, cannot send chunk");
+            clearResponse();
+            return;
+        }
+
+        ssize_t bytesSent = send(fd, chunk.c_str(), chunk.length(), MSG_NOSIGNAL);
+        if (bytesSent != static_cast<ssize_t>(chunk.length())) {
             Logger::log(LogLevel::ERROR, "Failed to write chunk header to client");
             clearResponse();
             return;
         }
-        MetricHandler::incrementMetric("bytes_send", chunkHeaderStr.length());
 
-
-        ssize_t bytesWritten = send(fd, readBuffer.c_str(), readBuffer.length(), MSG_NOSIGNAL);
-        // Write the chunk data
-        if (bytesWritten <= 0) {
-            Logger::log(LogLevel::ERROR, "Failed to write chunk data to client");
-            clearResponse();
-            return;
-        }
-        MetricHandler::incrementMetric("bytes_send", bytesWritten);
-
-
-        body->cleanReadBuffer(bytesWritten);
-
-        // Write the trailing CRLF
-        if (send(fd, "\r\n", 2, MSG_NOSIGNAL) <= 0) {
-            Logger::log(LogLevel::ERROR, "Failed to write chunk trailing CRLF to client");
-            clearResponse();
-        }
-        MetricHandler::incrementMetric("bytes_send", 2);
+        body->cleanReadBuffer(bytesSent - chunkHeaderStr.length() - 2);
+        MetricHandler::incrementMetric("bytes_send", bytesSent);
+        return;
     }
 
 

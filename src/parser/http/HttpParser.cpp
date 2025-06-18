@@ -100,6 +100,13 @@ bool HttpParser::parseRequestLine() {
     std::string line = buffer.substr(0, endPos);
     buffer.erase(0, endPos + 2);
 
+    if (line.empty() || std::isspace(line[0])) {
+        Logger::log(LogLevel::ERROR, "Invalid HTTP request line: " + line);
+        state = ParseState::ERROR;
+        errorCode = HttpResponse::StatusCode::BAD_REQUEST;
+        return false;
+    }
+
     std::istringstream iss(line);
     std::string methodStr, uri, version;
 
@@ -132,7 +139,7 @@ bool HttpParser::parseRequestLine() {
 
     if (version.length() < 8 || version.substr(0, 5) != "HTTP/" ||
         version[5] != '1' || version[6] != '.' ||
-        (version[7] != '0' && version[7] != '1')) {
+        (version[7] != '1')) {
         Logger::log(LogLevel::ERROR, "Invalid HTTP version: " + version);
         errorCode = HttpResponse::StatusCode::HTTP_VERSION_NOT_SUPPORTED;
         state = ParseState::ERROR;
@@ -186,8 +193,12 @@ bool HttpParser::parseHeaders() {
                 return false;
             }
 
-            std::string transferEncoding = request->getHeader("Transfer-Encoding");
-            chunkedTransfer = (transferEncoding == "chunked");
+            if (!contentLengthStr.empty() && chunkedTransfer) {
+                errorCode = HttpResponse::StatusCode::BAD_REQUEST;
+                state = ParseState::ERROR;
+                Logger::log(LogLevel::ERROR, "Content-Length and Transfer-Encoding cannot be used together");
+                return false;
+            }
 
             if (contentLength > 0 || chunkedTransfer) {
                 bodyStart = std::time(nullptr);
@@ -222,6 +233,11 @@ bool HttpParser::parseHeaders() {
 
         size_t colonPos = line.find(':');
         std::string name = line.substr(0, colonPos);
+        std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+        if (!name.empty()) name[0] = std::toupper(name[0]);
+        for (size_t i = 1; i < name.size(); ++i) {
+            if (name[i - 1] == '-') name[i] = std::toupper(name[i]);
+        }
         std::string value = line.substr(colonPos + 1);
 
         value.erase(0, value.find_first_not_of(" \t"));
@@ -242,8 +258,19 @@ bool HttpParser::parseHeaders() {
             ServerPool::matchVirtualServer(clientConnection, value);
         }
 
-        if (!name.empty())
+        if (name == "Transfer-Encoding") {
+           if (value != "chunked") {
+                Logger::log(LogLevel::ERROR, "Invalid Transfer-Encoding header: " + value);
+                errorCode = HttpResponse::StatusCode::NOT_IMPLEMENTED;
+                state = ParseState::ERROR;
+                return false;
+            }
+            chunkedTransfer = true;
+        }
+
+        if (!name.empty()) {
             request->headers[name] = value;
+        }
     }
 }
 
