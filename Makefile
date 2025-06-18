@@ -43,7 +43,8 @@ SRC = main.cpp \
 	JsonValue.cpp \
 	JsonParseError.cpp \
 	InternalApi.cpp \
-	MetricHandler.cpp
+	MetricHandler.cpp \
+	Banner.cpp
 
 OBJ_DIR = obj
 INCLUDE_DIR = src

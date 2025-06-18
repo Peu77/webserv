@@ -105,7 +105,7 @@ void ServerPool::matchVirtualServer(ClientConnection *client, const std::string 
 }
 
 bool ServerPool::loadConfig(const std::string &configFile) {
-    Logger::log(LogLevel::INFO, "Loading configuration from file: " + configFile);
+    Logger::log(LogLevel::DEBUG, "Loading configuration from file: " + configFile);
 
     ConfigParser parser;
 

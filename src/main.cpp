@@ -2,6 +2,7 @@
 // Created by Emil Ebert on 30.04.25.
 //
 
+#include <Banner.h>
 #include <iostream>
 #include "server/ServerPool.h"
 #include <csignal>
@@ -47,10 +48,13 @@ int main(const int argc, char **argv) {
 
     signal(SIGPIPE, SIG_IGN);
 
+
     createTempDir();
     if (!ServerPool::loadConfig(argv[1]))
         return 1;
-
+#ifndef DEBUG_MODE
+    Banner::printBannerAnimation();
+#endif
     setupSignalHandler();
     ServerPool::start();
     return 0;

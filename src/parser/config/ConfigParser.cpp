@@ -263,9 +263,11 @@ std::vector<ServerConfig> ConfigParser::getServerConfigs() const {
         return {};
     }
 
+#ifdef DEBUG_MODE
     for (auto server: servers) {
         printServerConfig(server);
     }
+#endif
 
     return servers;
 }
@@ -391,8 +393,9 @@ HttpConfig ConfigParser::parseHttpBlock(const ConfigBlock& block) const
     httpConfig.headerConfig = headerConfig;
     httpConfig.max_request_line_size = block.getSizeValue(getValidDirective("max_request_line_size", block.name), 1024);
 
+#ifdef DEBUG_MODE
     printHttpConfig(httpConfig);
-
+#endif
     return httpConfig;
 }
 
