@@ -105,8 +105,6 @@ void RequestHandler::cleanupCgiProcess(const pid_t pid) const {
     const pid_t result = waitpid(pid, &status, WNOHANG);
 
     if (result == 0) {
-        std::cout << pid << " exited with status " << WEXITSTATUS(status) << std::endl;
-        std::cout << "CGI process is still running, sending SIGTERM" << std::endl;
         kill(pid, SIGTERM);
         return;
     }
