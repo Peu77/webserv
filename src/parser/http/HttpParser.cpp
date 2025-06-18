@@ -259,7 +259,7 @@ bool HttpParser::parseHeaders() {
         }
 
         if (name == "Transfer-Encoding") {
-           if (value != "chunked") {
+            if (value != "chunked") {
                 Logger::log(LogLevel::ERROR, "Invalid Transfer-Encoding header: " + value);
                 errorCode = HttpResponse::StatusCode::NOT_IMPLEMENTED;
                 state = ParseState::ERROR;
@@ -290,6 +290,14 @@ bool HttpParser::parseBody() {
     if (chunkedTransfer) {
         return parseChunkedBody();
     }
+
+
+    if (request->totalBodySize + buffer.length() > contentLength) {
+        Logger::log(LogLevel::ERROR, "Body exceeds Content-Length");
+        state = ParseState::ERROR;
+        return false;
+    }
+
     const bool isBodyComplete = appendToBody(buffer);
     buffer.clear();
     if (isBodyComplete)
@@ -301,11 +309,13 @@ bool HttpParser::parseBody() {
 bool HttpParser::parseChunkedBody() {
     size_t client_max_body_size = clientConnection->config.client_max_body_size;
     while (true) {
-        if (!hasChunkSize) {
-            const size_t sizeEndPos = buffer.find("\r\n");
-            if (sizeEndPos == std::string::npos)
-                return false; // Need more data
+        const size_t sizeEndPos = buffer.find("\r\n");
+        if (sizeEndPos == std::string::npos)
+            return false; // Need more data
 
+        const std::string line = buffer.substr(0, sizeEndPos);
+
+        if (!hasChunkSize) {
             std::string sizeHex = buffer.substr(0, sizeEndPos);
 
             size_t semicolonPos = sizeHex.find(';');
@@ -313,6 +323,13 @@ bool HttpParser::parseChunkedBody() {
                 sizeHex = sizeHex.substr(0, semicolonPos);
             }
 
+            if (!std::all_of(sizeHex.begin(), sizeHex.end(), [](const char c) {
+                return std::isxdigit(c);
+            })) {
+                Logger::log(LogLevel::ERROR, "Invalid chunk size format: " + sizeHex);
+                state = ParseState::ERROR;
+                return false;
+            }
 
             try {
                 chunkSize = std::stoul(sizeHex, nullptr, 16);
@@ -323,16 +340,22 @@ bool HttpParser::parseChunkedBody() {
                 return false;
             }
 
+            if (client_max_body_size > 0 &&
+                request->totalBodySize + chunkSize > client_max_body_size) {
+                Logger::log(LogLevel::ERROR, "Chunked body exceeds maximum allowed size of " +
+                                             std::to_string(client_max_body_size));
+                state = ParseState::ERROR;
+                return false;
+            }
+
             buffer.erase(0, sizeEndPos + 2);
+            continue;
         }
 
 
         if (chunkSize == 0) {
-            if (buffer.length() < 2)
-                return false;
-
-            if (buffer.substr(0, 2) != "\r\n") {
-                Logger::log(LogLevel::ERROR, "Missing CRLF after final chunk");
+            if (!line.empty()) {
+                Logger::log(LogLevel::ERROR, "Final chunk size is 0 but line is not empty: " + line);
                 state = ParseState::ERROR;
                 return false;
             }
@@ -342,18 +365,13 @@ bool HttpParser::parseChunkedBody() {
             return true;
         }
 
-        if (buffer.length() < chunkSize + 2)
-            return false;
-
-        if (client_max_body_size > 0 &&
-            request->totalBodySize + chunkSize > client_max_body_size) {
-            Logger::log(LogLevel::ERROR, "Chunked body exceeds maximum allowed size of " +
-                                         std::to_string(client_max_body_size));
+        if (line.length() != chunkSize) {
+            Logger::log(LogLevel::ERROR, "Chunked body contains extra data after chunk");
             state = ParseState::ERROR;
             return false;
         }
 
-        std::string chunkedBody = buffer.substr(0, chunkSize);
+        std::string chunkedBody = line.substr(0, chunkSize);
         appendToBody(chunkedBody);
         hasChunkSize = false;
         buffer.erase(0, chunkSize + 2);
@@ -362,6 +380,7 @@ bool HttpParser::parseChunkedBody() {
 
 bool HttpParser::appendToBody(const std::string &data) {
     size_t client_max_body_size = clientConnection->config.client_max_body_size;
+
     if (client_max_body_size > 0 &&
         request->totalBodySize > client_max_body_size) {
         Logger::log(LogLevel::ERROR, "Body exceeds maximum allowed size");
