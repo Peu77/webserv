@@ -110,6 +110,13 @@ bool HttpParser::parseRequestLine() {
         return false;
     }
 
+    if (iss.rdbuf()->in_avail() > 0) {
+        Logger::log(LogLevel::ERROR, "Extra data found in request line: " + line);
+        state = ParseState::ERROR;
+        return false;
+    }
+
+
     auto method = stringToMethod(methodStr);
     if (method == std::nullopt) {
         Logger::log(LogLevel::ERROR, "Invalid HTTP method: " + methodStr);
@@ -127,6 +134,7 @@ bool HttpParser::parseRequestLine() {
         version[5] != '1' || version[6] != '.' ||
         (version[7] != '0' && version[7] != '1')) {
         Logger::log(LogLevel::ERROR, "Invalid HTTP version: " + version);
+        errorCode = HttpResponse::StatusCode::HTTP_VERSION_NOT_SUPPORTED;
         state = ParseState::ERROR;
         return false;
     }

@@ -46,6 +46,7 @@ public:
         INTERNAL_SERVER_ERROR = 500,
         NOT_IMPLEMENTED = 501,
         GATEWAY_TIMEOUT = 504,
+        HTTP_VERSION_NOT_SUPPORTED = 505,
     };
 
     HttpResponse() = delete;

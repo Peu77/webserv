@@ -91,7 +91,9 @@ std::string HttpResponse::getStatusMessage(const int code) {
         case CONFLICT: return "Conflict";
         case UNSUPPORTED_MEDIA_TYPE: return "Unsupported Media Type";
         case GATEWAY_TIMEOUT: return "Gateway Timeout";
+        case HTTP_VERSION_NOT_SUPPORTED: return "HTTP Version Not Supported";
         default: return "Unknown";
+
     }
 }
 
