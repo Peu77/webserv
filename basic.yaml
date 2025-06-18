@@ -1,0 +1,15 @@
+  http{
+    client_max_header_count 100;
+    client_max_header_size 1MB;
+
+    server {
+    listen                 8080;
+    server_name            localhost;
+    client_max_body_size   200MB;
+    client_max_header_size 10KB;
+    
+    location /{
+    return 200 "Hello, World!";
+    }
+  }
+  }
