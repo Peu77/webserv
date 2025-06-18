@@ -193,6 +193,7 @@ void ServerPool::closeConnections() {
             currentTime - client->lastPackageSend > static_cast<long>(client->config.keepalive_timeout)) {
             clientsToClose.push_back(fd);
             Logger::log(LogLevel::INFO, "Client connection timed out");
+            MetricHandler::incrementMetric("keepalive_timeout", 1);
             continue;
         }
 
@@ -201,6 +202,7 @@ void ServerPool::closeConnections() {
                 client_header_timeout)) {
             client->setResponse(RequestHandler::handleCustomErrorPage(
                 HttpResponse::html(HttpResponse::StatusCode::REQUEST_TIMEOUT), client->config, std::nullopt));
+            MetricHandler::incrementMetric("header_timeout", 1);
             client->keepAlive = false;
             continue;
         }
@@ -209,6 +211,7 @@ void ServerPool::closeConnections() {
             currentTime - client->parser.bodyStart > static_cast<long>(client->config.client_body_timeout)) {
             client->setResponse(RequestHandler::handleCustomErrorPage(
                 HttpResponse::html(HttpResponse::StatusCode::REQUEST_TIMEOUT), client->config, std::nullopt));
+            MetricHandler::incrementMetric("body_timeout", 1);
             client->keepAlive = false;
             Logger::log(LogLevel::INFO, "Client connection body timed out");
         }
@@ -217,6 +220,7 @@ void ServerPool::closeConnections() {
             currentTime - client->cgiProcessStart > static_cast<long>(client->config.cgi_timeout)) {
             client->setResponse(RequestHandler::handleCustomErrorPage(
                 HttpResponse::html(HttpResponse::StatusCode::GATEWAY_TIMEOUT), client->config, std::nullopt));
+            MetricHandler::incrementMetric("cgi_timeout", 1);
             client->keepAlive = false;
             Logger::log(LogLevel::INFO, "Client connection CGI process timed out");
         }
