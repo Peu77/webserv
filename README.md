@@ -34,7 +34,7 @@ This project is about writing our own HTTP/1.1-compliant web server in C++, with
 Clone the project
 
 ```bash
-git clone https://github.com/v1dusss/webserv.git
+git clone https://github.com/peu77/webserv.git
 ```
 
 Go to the project directory
