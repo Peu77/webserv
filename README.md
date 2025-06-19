@@ -7,8 +7,26 @@ This project is about writing our own HTTP/1.1-compliant web server in C++, with
 
 
 ## Features
-
--
+- multipart/form-data file upload
+- CGI support
+- HTTP/1.1 compliant
+- Keep-Alive connections
+- Custom error pages
+- Autoindexing
+- Custom configuration file
+- Internal API for metrics data and can be used to control the server
+- Support for multiple server blocks
+- virtual server matching based on `listen` and `server_name`
+- Persistent Sessions
+- Cookies
+- Smart Buffer Management, when a buffer for example the request body 
+  is not large enough to hold the entire request body in memory, 
+  it will be saved in a temporary file, this way we can handle large
+  requests without running out of memory.
+- php-cgi support, we prepared a little example for running wordpress with our webserv
+- Support for custom error pages, you can define custom error pages for different HTTP status codes in the configuration file.
+- Redirects, you can define redirects in the configuration file
+- Transfer-Encoding: chunked support, the server can handle chunked transfer encoding requests and responses
 
 
 ## Run Locally
