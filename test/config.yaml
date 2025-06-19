@@ -9,6 +9,8 @@ http {
     client_max_header_size 1.1kb;
     client_max_header_count 20;
     client_max_body_size 32gb;
+    client_body_timeout 2;
+    client_header_timeout 2;
 
     location / {
       return 200 "Hello, World!";

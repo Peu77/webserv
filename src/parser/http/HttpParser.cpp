@@ -240,6 +240,14 @@ bool HttpParser::parseHeaders() {
         }
         std::string value = line.substr(colonPos + 1);
 
+        if (std::any_of(value.begin(), value.end(), [](char c) {
+            return std::iscntrl(c) && c != '\r' && c != '\n';
+        })) {
+            Logger::log(LogLevel::ERROR, "Header value contains control characters: " + value);
+            state = ParseState::ERROR;
+            return false;
+        }
+
         value.erase(0, value.find_first_not_of(" \t"));
 
         if (name == "Host") {
@@ -361,17 +369,26 @@ bool HttpParser::parseChunkedBody() {
             }
 
             buffer.erase(0, 2);
+            if (!buffer.empty()) {
+                Logger::log(LogLevel::ERROR, "Extra data found after final chunk");
+                state = ParseState::ERROR;
+                return false;
+            }
             state = ParseState::COMPLETE;
             return true;
         }
 
-        if (line.length() != chunkSize) {
-            Logger::log(LogLevel::ERROR, "Chunked body contains extra data after chunk");
+        if (buffer.length() < chunkSize + 2) {
+            return false;
+        }
+
+        if (buffer[chunkSize] != '\r' || buffer[chunkSize + 1] != '\n') {
+            Logger::log(LogLevel::ERROR, "Invalid chunked body format: missing CRLF after chunk data");
             state = ParseState::ERROR;
             return false;
         }
 
-        std::string chunkedBody = line.substr(0, chunkSize);
+        std::string chunkedBody = buffer.substr(0, chunkSize);
         appendToBody(chunkedBody);
         hasChunkSize = false;
         buffer.erase(0, chunkSize + 2);
