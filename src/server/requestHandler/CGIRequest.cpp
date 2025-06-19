@@ -96,7 +96,6 @@ void RequestHandler::configureCgiChildProcess(int input_pipe[2], int output_pipe
     execve(cgiPath.c_str(), argv, envp.data());
 
     Logger::log(LogLevel::ERROR, "Failed to execute CGI script: " + scriptFileName + " with interpreter: " + cgiPath);
-    Logger::log(LogLevel::ERROR, strerror(errno));
     _exit(EXIT_FAILURE);
 }
 
@@ -193,7 +192,7 @@ std::optional<HttpResponse> RequestHandler::handleCgi() {
             const ssize_t written = write(fd, readBuffer.data(),
                                           std::min(readBuffer.length(), static_cast<size_t>(60000)));
             if (written <= 0) {
-                Logger::log(LogLevel::ERROR, "Failed to write to CGI process: " + std::to_string(errno));
+                Logger::log(LogLevel::ERROR, "Failed to write to CGI process");
                 close(fd);
                 return true;
             }

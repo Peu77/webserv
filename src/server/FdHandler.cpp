@@ -39,7 +39,7 @@ void FdHandler::pollFds() {
 
     const int ret = poll(pollfds.data(), pollfds.size(), 100);
     if (ret < 0) {
-        Logger::log(LogLevel::ERROR, "Poll error: " + std::string(strerror(errno)));
+        Logger::log(LogLevel::ERROR, "Poll error");
         return;
     }
 
@@ -47,7 +47,7 @@ void FdHandler::pollFds() {
     while (it != pollfds.end()) {
         if (it->revents & POLLERR) {
             Logger::log(LogLevel::ERROR, "Poll error on fd: " + std::to_string(it->fd));
-            Logger::log(LogLevel::ERROR, "Error: " + std::string(strerror(errno)));
+            //Logger::log(LogLevel::ERROR, "Error: " + std::string(strerror(errno)));
             it = removeFd(it->fd);
             continue;
         }

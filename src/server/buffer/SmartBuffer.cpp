@@ -20,7 +20,7 @@ SmartBuffer::SmartBuffer(const size_t maxMemorySize)
 SmartBuffer::SmartBuffer(const int fd): fd(fd) {
     struct stat fileStat{};
     if (fstat(fd, &fileStat) < 0) {
-        Logger::log(LogLevel::ERROR, "Failed to get file size: " + std::to_string(fd) + ": " + strerror(errno));
+        Logger::log(LogLevel::ERROR, "Failed to get file size: " + std::to_string(fd));
         return;
     }
     size = fileStat.st_size;
@@ -37,7 +37,7 @@ SmartBuffer::~SmartBuffer() {
         Logger::log(LogLevel::DEBUG, "Closing file descriptor: " + std::to_string(fd));
         if (close(fd) < 0)
             Logger::log(LogLevel::ERROR,
-                        "Failed to close file descriptor: " + std::to_string(fd) + ": " + strerror(errno));
+                        "Failed to close file descriptor: " + std::to_string(fd));
         fd = -1;
     }
 
@@ -64,7 +64,7 @@ bool SmartBuffer::onFileEvent(const int fd, const short events) {
         if (bytesWritten <= 0) {
             close(fd);
             this->fd = -1;
-            Logger::log(LogLevel::ERROR, "Failed to write to file: " + std::to_string(fd) + ": " + strerror(errno));
+            Logger::log(LogLevel::ERROR, "Failed to write to file: " + std::to_string(fd));
             return true;
         }
         size += bytesWritten;
@@ -72,7 +72,7 @@ bool SmartBuffer::onFileEvent(const int fd, const short events) {
     }
     if (events & POLLIN && toRead > 0) {
         if (lseek(fd, readPos, SEEK_SET) < 0) {
-            Logger::log(LogLevel::ERROR, "Failed to seek in file: " + std::to_string(fd) + ": " + strerror(errno));
+            Logger::log(LogLevel::ERROR, "Failed to seek in file: " + std::to_string(fd));
             return false;
         }
         toRead = std::min(toRead, static_cast<size_t>(60000));
