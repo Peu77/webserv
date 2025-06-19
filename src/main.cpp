@@ -18,6 +18,8 @@
 
 
 static void signalHandler(const int signum) {
+    std::cout << std::endl;
+    Logger::log(LogLevel::INFO, "Stop signal received");
     ServerPool::stop();
     (void) signum;
 }
