@@ -17,14 +17,15 @@
 std::unordered_map<std::string, std::vector<std::string> > SessionManager::sessions;
 std::mutex SessionManager::mutex_;
 
+// Generates a string that is unique (statistically), hard to guess, and suitable for use as a session token or cookie value
 static std::string generateSessionId() {
-    static std::random_device rd;
-    static std::mt19937_64 eng(rd());
+    static std::random_device rd;                                   // Gathers entropy from hardware (if available), used to seed the RNG
+    static std::mt19937_64 eng(rd());                               // 64-bit Mersenne Twister RNG seeded with rd
     static std::uniform_int_distribution<uint64_t> dist;
-    uint64_t val = dist(eng);
-    std::stringstream ss;
+    uint64_t val = dist(eng);                                       // Uniformly distributes a random uint64_t value
+    std::stringstream ss;                                           // Converts the random number into a fixed-length, zero-padded, hexadecimal string
     ss << std::hex << std::setw(16) << std::setfill('0') << val;
-    return ss.str();
+    return ss.str();                                                // e.g. "3a7f9b2e1c4d5e6f"
 }
 
 std::string SessionManager::getSessionId(const std::string &cookieHeader, bool &isNew) {
