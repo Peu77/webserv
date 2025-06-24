@@ -1,4 +1,7 @@
-
+<div align="center">
+    <img src="https://raw.githubusercontent.com/ayogun/42-project-badges/refs/heads/main/badges/webservm.png" alt="minishell">
+    <p>Score: 125/100</p>
+</div>
 
 # Webserv
 
@@ -11,7 +14,6 @@ This project is about writing our own HTTP/1.1-compliant web server in C++, with
 - CGI support
 - HTTP/1.1 compliant
 - Keep-Alive connections
-- Custom error pages
 - Autoindexing
 - Custom configuration file
 - Internal API for metrics data and can be used to control the server
